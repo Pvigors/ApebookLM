@@ -1,0 +1,53 @@
+# Docker 构建上下文排除清单 —— 越小越快,且避免把本机产物/密钥带进镜像。
+# 依赖在镜像内 npm ci 重装;.next / 产物在镜像内重新 build。
+node_modules
+.next
+.next-*
+.next-build
+out
+build
+
+# 运行时数据(SQLite 库 / 生成的音视频 / 信息图 等)由 volume 挂载,绝不进镜像。
+.data
+
+# 版本与本地垃圾
+.git
+.gitignore
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.DS_Store
+
+# 本地密钥 / 环境文件(镜像用 env_file 注入,别打进层)
+.env
+.env*.local
+.env.prod
+.env.staging
+*.pem
+
+# 评测报告与临时目录(体积大、与构建无关)
+eval/reports
+eval
+test
+scratchpad
+.tmp-*
+.claude
+tsconfig.tsbuildinfo
+/*.png
+# 本地交互方案对比页不是正式产品资产，不进生产 public。
+public/*-demos.html
+public/*demos*.html
+public/mockups
+public/admin-prototype
+public/admin-mockups
+public/MP_verify_*
+
+# 部署脚手架自身与文档(镜像里用不到)
+Dockerfile
+.dockerignore
+docker-compose.yml
+deploy
+docs
+.github

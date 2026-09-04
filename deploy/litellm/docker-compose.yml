@@ -1,0 +1,58 @@
+services:
+  litellm-db:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_DB: litellm
+      POSTGRES_PASSWORD: ${LITELLM_POSTGRES_PASSWORD:?请通过 --env-file 配置 LITELLM_POSTGRES_PASSWORD}
+    volumes:
+      - litellm_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [default]
+
+  litellm-gateway:
+    image: ghcr.io/berriai/litellm-non_root:v1.98.0@sha256:157aaf0a519713663ec6abefe73fa48bf12f638b0e63fb2b209ba0eae68e6bd7
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      DATABASE_URL: postgresql://litellm:${LITELLM_POSTGRES_PASSWORD}@litellm-db:5432/litellm
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?请通过 --env-file 配置 LITELLM_MASTER_KEY}
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:?请通过 --env-file 配置固定 LITELLM_SALT_KEY}
+      LITELLM_MODE: PRODUCTION
+      LITELLM_LOCAL_MODEL_COST_MAP: "True"
+      DASHSCOPE_API_BASE: ${DASHSCOPE_API_BASE:?请配置 DASHSCOPE_API_BASE}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:?请配置 DASHSCOPE_API_KEY}
+      MOONSHOT_API_BASE: ${MOONSHOT_API_BASE:?请配置 MOONSHOT_API_BASE}
+      MOONSHOT_API_KEY: ${MOONSHOT_API_KEY:?请配置 MOONSHOT_API_KEY}
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    expose:
+      - "4000"
+    depends_on:
+      litellm-db:
+        condition: service_healthy
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 4g
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:4000/health/readiness',headers={'Authorization':'Bearer '+os.environ.get('LITELLM_MASTER_KEY','')}), timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 60s
+    networks: [default, apebooklm]
+
+volumes:
+  litellm_pg:
+
+networks:
+  apebooklm:
+    external: true
+    name: apebooklm_default

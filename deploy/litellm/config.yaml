@@ -1,0 +1,71 @@
+model_list:
+  - model_name: apebook-chat
+    litellm_params:
+      model: openai/qwen-plus
+      api_base: os.environ/DASHSCOPE_API_BASE
+      api_key: os.environ/DASHSCOPE_API_KEY
+      timeout: 240
+      stream_timeout: 45
+    model_info:
+      id: dashscope/qwen-plus
+      base_model: qwen-plus
+
+  - model_name: apebook-chat-fallback
+    litellm_params:
+      model: openai/moonshot-v1-32k
+      api_base: os.environ/MOONSHOT_API_BASE
+      api_key: os.environ/MOONSHOT_API_KEY
+      timeout: 240
+      stream_timeout: 45
+    model_info:
+      id: moonshot/moonshot-v1-32k
+      base_model: moonshot-v1-32k
+
+  - model_name: apebook-vision
+    litellm_params:
+      model: openai/qwen-vl-plus
+      api_base: os.environ/DASHSCOPE_API_BASE
+      api_key: os.environ/DASHSCOPE_API_KEY
+      timeout: 240
+      stream_timeout: 45
+    model_info:
+      id: dashscope/qwen-vl-plus
+      base_model: qwen-vl-plus
+
+  - model_name: apebook-vision-fallback
+    litellm_params:
+      model: openai/moonshot-v1-32k-vision-preview
+      api_base: os.environ/MOONSHOT_API_BASE
+      api_key: os.environ/MOONSHOT_API_KEY
+      timeout: 240
+      stream_timeout: 45
+    model_info:
+      id: moonshot/moonshot-v1-32k-vision-preview
+      base_model: moonshot-v1-32k-vision-preview
+
+router_settings:
+  num_retries: 0
+  timeout: 240
+  allowed_fails: 3
+  cooldown_time: 30
+  enable_pre_call_checks: true
+  fallbacks:
+    - apebook-chat: [apebook-chat-fallback]
+    - apebook-vision: [apebook-vision-fallback]
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  json_logs: true
+  telemetry: false
+  request_timeout: 240
+  turn_off_message_logging: true
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  store_model_in_db: false
+  disable_error_logs: true
+  proxy_batch_write_at: 60
+  allow_public_health_readiness_details: false
+  cancel_on_disconnect: true
+  store_prompts_in_spend_logs: false

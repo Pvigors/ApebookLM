@@ -1,0 +1,1278 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* System-native first: SF on macOS / Segoe UI on Windows for Latin, and the
+     platform's CJK font (PingFang / YaHei / Noto) for Chinese — clean & light. */
+  --font-sans: -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui,
+    "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans CJK SC", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono", Menlo,
+    Consolas, monospace;
+  --brand: linear-gradient(135deg, #7c5cff 0%, #5b4bd6 100%);
+  --lav: #6d5ae6;
+  --lav-d: #5b4bd6;
+
+  /* ---- Semantic color channels (R G B) — the Tailwind tokens
+     (canvas/panel/panel2/edge/accent/accentSoft/ink/ink2/muted/solid …)
+     resolve to these. Dark mode flips them in :root[data-theme="dark"],
+     so component classes (bg-panel / text-ink / border-edge …) follow
+     automatically — no per-element dark: variants needed. ---- */
+  --c-canvas: 247 248 252;
+  --c-panel: 255 255 255;
+  --c-panel2: 243 243 253;
+  --c-edge: 230 231 238;
+  --c-accent: 109 90 230;
+  --c-accentSoft: 236 233 252;
+  --c-onAccent: 255 255 255;
+  --c-ink: 31 32 36;
+  --c-ink2: 91 93 102;
+  --c-muted: 144 148 160;
+  --c-solid: 27 28 31; /* primary "black" buttons */
+  --c-onSolid: 255 255 255;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --lav: #8d7ef6;
+  --lav-d: #7b6cea;
+  --c-canvas: 20 21 26;
+  --c-panel: 30 31 38;
+  --c-panel2: 42 44 52;
+  --c-edge: 52 54 63;
+  --c-accent: 141 126 246;
+  --c-accentSoft: 49 43 78;
+  --c-onAccent: 255 255 255;
+  --c-ink: 233 234 240;
+  --c-ink2: 167 170 181;
+  --c-muted: 121 125 137;
+  --c-solid: 234 235 240; /* light button on dark */
+  --c-onSolid: 24 25 30;
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+/* 后台管理:统一外壳、数据密度与窄屏可用性。 */
+@keyframes adminDrawer {
+  from { transform: translateX(-18px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.admin-page > div,
+.admin-page > section {
+  min-width: 0;
+}
+
+.admin-page h1 {
+  text-wrap: balance;
+}
+
+.admin-page table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-page :is(input, select, textarea, button) {
+  max-width: 100%;
+}
+
+.admin-page :is(input, select, textarea):focus-visible {
+  outline: 2px solid rgba(109, 90, 230, 0.24);
+  outline-offset: 1px;
+}
+
+@media (max-width: 767px) {
+  .admin-page > div[class*="space-y"],
+  .admin-page > section[class*="space-y"] {
+    row-gap: 1.25rem;
+  }
+
+  .admin-page header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-page header > :last-child:not(:first-child) {
+    width: 100%;
+  }
+
+  .admin-page .admin-table-scroll,
+  .admin-page section:has(table) > div:last-child {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 预留滚动条占位:文档滚动条出现/消失时,居中内容不再左右横移(消除上下滚动时的界面「晃动」)。 */
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  background-color: rgb(var(--c-canvas));
+  color: rgb(var(--c-ink));
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Very soft lavender wash at the top — keeps the light canvas from feeling flat */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(48vmax 30vmax at 50% -16%, rgba(124, 92, 255, 0.07), transparent 62%),
+    radial-gradient(36vmax 26vmax at 100% 0%, rgba(0, 179, 214, 0.05), transparent 58%);
+}
+
+::selection {
+  background: rgba(124, 92, 255, 0.18);
+  color: #1f2024;
+}
+
+/* Tasteful focus: suppress the default ring on mouse-click, keep a clean ring for keyboard nav */
+button:focus,
+a:focus,
+[role="button"]:focus {
+  outline: none;
+}
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid rgba(109, 90, 230, 0.55);
+  outline-offset: 2px;
+}
+
+/* Light scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cdd0db transparent;
+}
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #cdd0db;
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #b6b9c8;
+  background-clip: content-box;
+}
+
+/* ---- lavender accent surfaces (white text on lavender) ---- */
+.bg-accent {
+  background-color: var(--lav);
+  box-shadow: 0 6px 16px -8px rgba(109, 90, 230, 0.55);
+}
+.bg-accent:hover {
+  background-color: var(--lav-d);
+}
+.bg-brand {
+  background-image: var(--brand);
+}
+.brand-text {
+  background-image: linear-gradient(120deg, #7c5cff, #6d5ae6 55%, #7b5bd0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Frosted light-glass panels (modals / login) */
+.glass,
+.panel-glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgba(20, 22, 40, 0.07);
+}
+.card-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(20, 22, 40, 0.06);
+}
+
+/* Soft gradient hairline border */
+.glow-border {
+  position: relative;
+}
+.glow-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, rgba(124, 92, 255, 0.28), rgba(0, 179, 214, 0.2));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* 大数字(stats/steps/编号 01/02 等):换更挺括的西文数字栈 + 等宽/等高数字 + 斜杠零,
+   PingFang/雅黑的数字在 32px 以上偏软,这条让大数字立刻有杂志/信息图质感。 */
+.num-display {
+  font-family: "SF Pro Display", "Helvetica Neue", Inter, system-ui, sans-serif;
+  font-variant-numeric: lining-nums tabular-nums slashed-zero;
+  letter-spacing: 0;
+}
+
+/* 中文大标题:撤掉为拉丁字头设计的负字距、开 palt 让中文标点自动收紧,
+   修「汉字撞在一起 / 标点后大空洞」的廉价感。对拉丁字符无副作用。 */
+.cjk-display {
+  letter-spacing: 0;
+  font-feature-settings: "palt" 1;
+}
+
+/* Thin animated lavender beam (top edge of a panel) */
+@keyframes beamSlide {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 150% 0;
+  }
+}
+.tech-beam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 2;
+  background-image: linear-gradient(90deg, transparent 0%, #a99cf5 35%, #7c5cff 50%, #6bc6dd 70%, transparent 100%);
+  background-size: 200% 100%;
+  animation: beamSlide 4.5s linear infinite;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.elev-soft {
+  box-shadow: 0 14px 36px -18px rgba(28, 30, 60, 0.22);
+}
+.elev-1 {
+  box-shadow: 0 1px 3px rgba(20, 22, 40, 0.08);
+}
+
+/* ---- micro-animations ---- */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fadeup {
+  animation: fadeUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-popin {
+  animation: popIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes glowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 92, 255, 0.4), 0 8px 20px -8px rgba(109, 90, 230, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(124, 92, 255, 0), 0 10px 26px -8px rgba(0, 179, 214, 0.4);
+  }
+}
+.glow-pulse {
+  animation: glowPulse 2.6s ease-in-out infinite;
+}
+@keyframes shimmerMove {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+.shimmer-text {
+  background-image: linear-gradient(90deg, #9094a0 0%, #6d5ae6 35%, #2f9bbc 50%, #6d5ae6 65%, #9094a0 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: shimmerMove 1.8s linear infinite;
+}
+
+/* Markdown content styling for chat answers / reports */
+.prose-chat {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: rgb(var(--c-ink));
+}
+.prose-chat p {
+  margin: 0.5rem 0;
+}
+.prose-chat ul,
+.prose-chat ol {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+.prose-chat ul {
+  list-style: disc;
+}
+.prose-chat ol {
+  list-style: decimal;
+}
+.prose-chat li {
+  margin: 0.2rem 0;
+}
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3 {
+  font-weight: 600;
+  margin: 0.85rem 0 0.4rem;
+  color: #111317;
+}
+.prose-chat h1 {
+  font-size: 1.25rem;
+}
+.prose-chat h2 {
+  font-size: 1.1rem;
+}
+.prose-chat h3 {
+  font-size: 1rem;
+}
+.prose-chat strong {
+  color: #111317;
+}
+.prose-chat code {
+  background: #f3f3fd;
+  border: 1px solid rgb(var(--c-edge));
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+.prose-chat pre {
+  background: #f3f3fd;
+  border: 1px solid rgb(var(--c-edge));
+  padding: 0.75rem;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 0.6rem 0;
+}
+.prose-chat pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+.prose-chat a {
+  color: rgb(var(--c-accent));
+  text-decoration: underline;
+}
+.prose-chat blockquote {
+  border-left: 3px solid rgb(var(--c-accent));
+  padding-left: 0.75rem;
+  color: rgb(var(--c-ink2));
+  margin: 0.5rem 0;
+}
+.prose-chat table {
+  border-collapse: collapse;
+  margin: 0.6rem 0;
+  font-size: 0.9em;
+}
+.prose-chat th,
+.prose-chat td {
+  border: 1px solid rgb(var(--c-edge));
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+.prose-chat th {
+  background: #f3f3fd;
+  font-weight: 500;
+}
+
+/* 多列 Markdown 表格：列宽优先保证可读性，超出消息宽度时只让表格自身滚动。
+   不能再把 6–10 列硬压进 500px 对话栏，否则中文会退化成逐字竖排。 */
+.prose-chat .markdown-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border: 1px solid rgb(var(--c-edge));
+  border-radius: 12px;
+  background: rgb(var(--c-panel));
+  box-shadow: 0 5px 18px -16px rgb(var(--c-ink) / 0.38);
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.prose-chat .markdown-table-scroll:focus-visible {
+  outline: 2px solid rgb(var(--c-accent) / 0.55);
+  outline-offset: 2px;
+}
+.prose-chat .markdown-table {
+  width: 100%;
+  min-width: 100%;
+  max-width: none;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+}
+.prose-chat .markdown-table th,
+.prose-chat .markdown-table td {
+  min-width: 10rem;
+  max-width: 22rem;
+  padding: 0.62rem 0.72rem;
+  border: 0;
+  border-right: 1px solid rgb(var(--c-edge));
+  border-bottom: 1px solid rgb(var(--c-edge));
+  vertical-align: top;
+  line-height: 1.55;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+.prose-chat .markdown-table th {
+  background: rgb(var(--c-panel2));
+  font-weight: 600;
+}
+.prose-chat .markdown-table th:first-child,
+.prose-chat .markdown-table td:first-child {
+  position: sticky;
+  left: 0;
+  min-width: 7.5rem;
+  max-width: 12rem;
+  z-index: 1;
+  background: rgb(var(--c-panel));
+  box-shadow: 1px 0 0 rgb(var(--c-edge));
+}
+.prose-chat .markdown-table thead th:first-child {
+  z-index: 2;
+  background: rgb(var(--c-panel2));
+}
+.prose-chat .markdown-table tbody tr:nth-child(even) td {
+  background: rgb(var(--c-panel2) / 0.3);
+}
+.prose-chat .markdown-table tbody tr:nth-child(even) td:first-child {
+  background: rgb(var(--c-panel2));
+}
+.prose-chat .markdown-table th:last-child,
+.prose-chat .markdown-table td:last-child {
+  border-right: 0;
+}
+.prose-chat .markdown-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.prose-chat .markdown-table code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .prose-chat .markdown-table th,
+  .prose-chat .markdown-table td {
+    min-width: 8.5rem;
+    max-width: 18rem;
+    padding: 0.55rem 0.65rem;
+  }
+  .prose-chat .markdown-table th:first-child,
+  .prose-chat .markdown-table td:first-child {
+    min-width: 6.75rem;
+    max-width: 10rem;
+  }
+}
+.prose-chat > div > *:first-child {
+  margin-top: 0;
+}
+.prose-chat > div > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Inline citation chips rendered from [n] markers */
+.cite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.25rem;
+  margin: 0 0.1rem;
+  border-radius: 0.3rem;
+  background: rgba(109, 90, 230, 0.13);
+  color: #5b4bd6;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1;
+  vertical-align: super;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.cite:hover {
+  transform: translateY(-1px);
+  background: rgba(109, 90, 230, 0.22);
+}
+.prose-chat a.cite {
+  text-decoration: none;
+}
+.cite:focus-visible {
+  outline: 2px solid rgb(var(--c-accent) / 0.55);
+  outline-offset: 2px;
+}
+
+/* 来源发现详情：长报告与来源共用一条明确、稳定的纵向滚动轴。 */
+.discover-detail-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-accent) / 0.35) transparent;
+}
+.discover-detail-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.discover-detail-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgb(var(--c-accent) / 0.35);
+  background-clip: padding-box;
+}
+.discover-detail-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+   x-data-spreadsheet(数据表格的 Excel 视图)— 对齐应用设计系统:
+   系统字体栈 + 薰衣草选区(库默认是蓝色 #4b89ff)。
+--------------------------------------------------------------------------- */
+.x-spreadsheet {
+  font-family: var(--font-sans) !important;
+}
+.x-spreadsheet-selector .x-spreadsheet-selector-area,
+.x-spreadsheet-selector .x-spreadsheet-selector-clipboard,
+.x-spreadsheet-selector .x-spreadsheet-selector-autofill {
+  border-color: #6d5ae6 !important;
+}
+.x-spreadsheet-selector .x-spreadsheet-selector-corner {
+  background: #6d5ae6 !important;
+  border-color: #6d5ae6 !important;
+}
+.x-spreadsheet-editor .x-spreadsheet-editor-area textarea {
+  border-color: #6d5ae6 !important;
+  font-family: var(--font-sans) !important;
+}
+.x-spreadsheet-bottombar .x-spreadsheet-menu > li.active {
+  color: #6d5ae6 !important;
+}
+/* 多 sheet 时底部标签栏改为「单行 + 横向滚动」,不再换行 —— 否则换行的第二排
+   会溢出固定 40px 的 bar,压到表格弹窗底部的操作栏(存为笔记/删除/导出 Excel)。
+   换行只需靠下面 .x-spreadsheet-menu 的 nowrap+overflow-x 控制。 */
+.x-spreadsheet-bottombar {
+  min-width: 0;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+.x-spreadsheet-bottombar.has-sheet-scroll-controls {
+  padding-right: 72px !important;
+}
+.x-spreadsheet-bottombar .x-spreadsheet-menu {
+  display: flex !important;
+  flex: 1 1 0 !important;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-accent) / 0.45) transparent;
+  white-space: nowrap;
+}
+.x-spreadsheet-bottombar .x-spreadsheet-menu::-webkit-scrollbar {
+  height: 7px;
+}
+.x-spreadsheet-bottombar .x-spreadsheet-menu::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgb(var(--c-accent) / 0.45);
+  background-clip: padding-box;
+}
+.x-spreadsheet-bottombar .x-spreadsheet-menu > li {
+  flex: 0 0 auto !important;
+  float: none !important;
+}
+.table-sheet-scroll-controls {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  z-index: 5;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid rgb(var(--c-edge));
+  border-radius: 9px;
+  background: rgb(var(--c-panel));
+  box-shadow: 0 3px 10px -7px rgb(var(--c-ink) / 0.45);
+}
+.table-sheet-scroll-controls.is-hidden {
+  display: none;
+}
+.table-sheet-scroll-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  color: rgb(var(--c-ink2));
+  font-size: 22px;
+  line-height: 1;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.table-sheet-scroll-button + .table-sheet-scroll-button {
+  border-left: 1px solid rgb(var(--c-edge));
+}
+.table-sheet-scroll-button:not(:disabled):hover {
+  color: rgb(var(--c-accent));
+  background: rgb(var(--c-accentSoft));
+}
+.table-sheet-scroll-button:disabled {
+  cursor: default;
+  color: rgb(var(--c-muted) / 0.45);
+}
+
+/* Mind Elixir's inner `.map-container{height:100%}` can resolve against its
+   expanded min-content height after “全部展开”, turning a 552px viewer into a
+   2500px invisible canvas. Pin it to the already-bounded `.me-host` viewport;
+   the library still pans/zooms its `.map-canvas` transform inside this frame. */
+.me-host > .map-container {
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: hidden !important;
+}
+/* 隐藏 x-spreadsheet 底栏的「...」工作表跳转下拉:它向上弹出的菜单会被网格的
+   .x-spreadsheet-overlayer(z-index 更高的堆叠上下文)盖住 → 点了像没反应,z-index
+   从底栏侧抢不过。而它的功能(切换工作表)与旁边一直可见、可点的标签完全重复,
+   直接隐藏最干净;「+」(新增表)保留。 */
+.x-spreadsheet-bottombar .x-spreadsheet-dropdown {
+  display: none !important;
+}
+
+/* Cited passage highlight on rendered markdown (CSS Custom Highlight API) */
+::highlight(cite-passage) {
+  background-color: rgba(109, 90, 230, 0.26);
+  color: #1f2024;
+}
+
+/* Neon focus glow for the chat composer */
+.focus-neon:focus-within {
+  border-color: rgba(109, 90, 230, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(109, 90, 230, 0.15), 0 8px 24px -10px rgba(109, 90, 230, 0.4);
+}
+
+/* Skeleton shimmer sweep for the "generating…" row (NotebookLM-style) */
+@keyframes shimmerSweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Animated equalizer bars for audio rows (图标动态) */
+@keyframes eqBar {
+  0%, 100% { transform: scaleY(0.32); }
+  50% { transform: scaleY(1); }
+}
+
+/* Lexical check-list items (todo) */
+.lx-li {
+  position: relative;
+  list-style: none;
+  margin-left: 0;
+  padding-left: 1.6rem;
+  outline: none;
+}
+.lx-li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2em;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 1.5px solid #c4c7d4;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.lx-li-checked {
+  text-decoration: line-through;
+  color: #9094a0;
+}
+.lx-li-checked::before {
+  background: #6d5ae6;
+  border-color: #6d5ae6;
+}
+.lx-li-checked::after {
+  content: "";
+  position: absolute;
+  left: 0.36rem;
+  top: 0.3em;
+  width: 0.32rem;
+  height: 0.62rem;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  cursor: pointer;
+}
+
+/* Lexical tables (note editor Insert → 表格) */
+.lx-table {
+  border-collapse: collapse;
+  margin: 14px 0;
+  table-layout: fixed;
+  width: max-content;
+  max-width: 100%;
+  overflow: hidden;
+}
+.lx-table-cell {
+  border: 1px solid #e6e7ee;
+  padding: 8px 12px;
+  min-width: 84px;
+  vertical-align: top;
+  text-align: left;
+  position: relative;
+  outline: none;
+  /* body cells are white; only header cells (first row) get a tint below. This
+     explicit white also stops any first-column shading regression. */
+  background: #ffffff;
+}
+.lx-table-cell-header {
+  background: #f3f3fd;
+  font-weight: 600;
+  color: #2b2d33;
+}
+.lx-table-cell > * {
+  margin: 0;
+}
+
+/* ---- playground-parity table editing UX -------------------------------- */
+
+/* table wrapper needs a positioning context so the cell-corner action button
+   and hover "+" bars can be absolutely placed relative to the editor anchor.
+   The anchor (scroll container in RichNoteEditor) is already position:relative. */
+
+/* cell selection highlight — @lexical/table adds theme.tableCellSelected to each
+   highlighted <td>/<th> and theme.tableSelection to the <table> (to suppress the
+   native text selection while a cell-range drag is active). Class names come from
+   the `theme` map in RichNoteEditor. */
+.lx-table.lx-table-selection {
+  caret-color: transparent;
+}
+.lx-table.lx-table-selection ::selection,
+.lx-table-cell-selected ::selection {
+  background: transparent;
+}
+.lx-table-cell-selected {
+  background: rgba(109, 90, 230, 0.14) !important;
+  caret-color: transparent;
+}
+
+/* row striping — @lexical/table only sets data-lexical-row-striping="true" on
+   the <table>; the host CSS does the zebra. Even data-rows get a tint. */
+.lx-table[data-lexical-row-striping="true"] tr:nth-child(even) > .lx-table-cell:not(.lx-table-cell-header) {
+  background: #f3f3fd;
+}
+
+/* vertical alignment — TableCellNode.setVerticalAlign writes inline
+   vertical-align directly on the <td>/<th>; no extra CSS needed (the default
+   top alignment already lives on .lx-table-cell). */
+
+/* frozen first row / first column — @lexical/table only sets
+   data-lexical-frozen-row / -column on the <table>; the host CSS makes the edge
+   sticky + adds the "pinned" shadow the playground uses. We freeze exactly the
+   first row / first column (the menu toggles a single row/col). */
+.lx-table[data-lexical-frozen-row="true"] tr:first-child > .lx-table-cell {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #ffffff;
+  box-shadow: 0 2px 4px -1px rgba(20, 22, 40, 0.12);
+}
+.lx-table[data-lexical-frozen-row="true"] tr:first-child > .lx-table-cell-header {
+  background: #f3f3fd;
+}
+.lx-table[data-lexical-frozen-column="true"] tr > .lx-table-cell:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #ffffff;
+  box-shadow: 2px 0 4px -1px rgba(20, 22, 40, 0.12);
+}
+.lx-table[data-lexical-frozen-column="true"] tr > .lx-table-cell-header:first-child {
+  background: #f3f3fd;
+}
+/* corner cell (frozen row ∩ frozen column) sits above both */
+.lx-table[data-lexical-frozen-row="true"][data-lexical-frozen-column="true"]
+  tr:first-child
+  > .lx-table-cell:first-child {
+  z-index: 4;
+}
+
+/* resizer drag zones (TableCellResizerPlugin renders these as absolutely
+   positioned divs in a body portal). The zone itself is a wide (12px),
+   fully TRANSPARENT hit target — it must never render a visible white/opaque
+   block in the cell. On hover we reveal only a thin faint line via ::after
+   (the cursor already signals col/row-resize); during an active drag the
+   plugin paints a thin accent line inline. */
+.lx-table-cell-resizer {
+  position: absolute;
+  z-index: 60;
+  touch-action: none;
+  background: transparent;
+}
+/* thin reveal line, centered in the (transparent) hit zone */
+.lx-table-cell-resizer::after {
+  content: "";
+  position: absolute;
+  background: transparent;
+  transition: background-color 0.12s ease;
+  pointer-events: none;
+}
+.lx-table-cell-resizer-right::after {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+}
+.lx-table-cell-resizer-bottom::after {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+}
+.lx-table-cell-resizer:hover::after {
+  background-color: rgba(109, 90, 230, 0.45);
+}
+/* while dragging, the plugin spans the line across the whole table and paints
+   it inline (#6d5ae6); suppress the hover pseudo-line so the two don't stack. */
+.lx-table-cell-resizer[data-dragging="true"]::after {
+  background-color: transparent;
+}
+
+/* cell-corner action button (TableActionMenuPlugin) — only visible on the
+   focused/selected cell (the plugin toggles .lx-table-action-show). */
+.lx-table-action-button-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  will-change: transform;
+}
+.lx-table-action-button-container.lx-table-action-show {
+  display: block;
+}
+.lx-table-action-button {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid #e6e7ee;
+  background: #ffffff;
+  color: #5b5d66;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(31, 32, 36, 0.12);
+  transition: background 0.12s, color 0.12s;
+}
+.lx-table-action-button:hover {
+  background: #ece9fc;
+  color: #6d5ae6;
+}
+
+/* hover "+" bars (TableHoverActionsPlugin) — appear along the bottom / right
+   edge of the hovered table; absolutely positioned within the editor anchor. */
+.lx-table-hover-button {
+  position: absolute;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 1px dashed #c9cbe0;
+  background: rgba(241, 242, 247, 0.7);
+  color: #6d5ae6;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.lx-table-hover-button:hover {
+  background: #ece9fc;
+  border-color: #6d5ae6;
+  border-style: solid;
+}
+
+/* ---------------------------------------------------------------------------
+   mind-elixir right-click context menu — restyled to match the app's dropdown
+   menus (rounded panel, hairline border, panel2 hover, kbd-chip shortcuts).
+   !important is required to beat mind-elixir's higher-specificity base rules.
+--------------------------------------------------------------------------- */
+.context-menu .menu-list {
+  min-width: 172px !important;
+  padding: 4px !important;
+  border: 1px solid #e6e7ee !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: 0 12px 32px rgba(20, 22, 40, 0.16) !important;
+  color: #1f2024 !important;
+}
+.context-menu .menu-list li {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  min-width: 0 !important;
+  padding: 7px 10px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: #1f2024 !important;
+  font-size: 13.5px !important;
+}
+.context-menu .menu-list li:hover {
+  filter: none !important;
+  background: #f3f3fd !important;
+}
+.context-menu .menu-list li a {
+  color: inherit !important;
+}
+.context-menu .menu-list li span {
+  line-height: 1.25 !important;
+}
+/* second span on a row = the keyboard shortcut → render as a small kbd chip */
+.context-menu .menu-list li span + span {
+  float: none !important;
+  flex-shrink: 0 !important;
+  padding: 1.5px 6px !important;
+  border-radius: 5px !important;
+  background: rgba(31, 32, 36, 0.06) !important;
+  color: #9094a0 !important;
+  font-size: 11px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important;
+}
+/* Hide mind-elixir's "摘要 / summary" item — NotebookLM has no summary-bracket
+   feature, and mind-elixir's createSummary throws an UNCAUGHT "Can not select
+   root node" error when invoked on the root, which Next surfaces as a red
+   "1 Issue" overlay. Removing the only entry point eliminates the crash. */
+.context-menu .menu-list li#cm-summary {
+  display: none !important;
+}
+
+/* ---------------------------------------------------------------------------
+   mind-elixir nodes → uniform lavender boxes (NotebookLM look). By default
+   mind-elixir renders deeper nodes as underlined text; this makes every node
+   a solid rounded box like NotebookLM.
+--------------------------------------------------------------------------- */
+.me-host me-tpc {
+  background: #ccd0f5 !important;
+  color: #2a3252 !important;
+  padding: 6px 12px !important;
+  border-radius: 9px !important;
+  box-shadow: 0 1px 2px rgba(38, 40, 80, 0.1) !important;
+  font-weight: 500 !important;
+}
+.me-host me-root me-tpc {
+  background: #b7bcf0 !important;
+  font-weight: 600 !important;
+}
+
+/* Draggable block handle (RichNoteEditor) — the plugin toggles display /
+   transform / opacity inline; these are just the base position + visuals. */
+.draggable-block-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 2px;
+  cursor: grab;
+  user-select: none;
+  will-change: transform;
+}
+.draggable-block-menu:hover {
+  background: rgb(var(--c-panel2));
+}
+.draggable-block-menu:active {
+  cursor: grabbing;
+}
+.draggable-block-target-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 100%;
+  background: rgb(var(--c-accent));
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Collapsible block (<details>/<summary>) — chevron + collapse visuals.
+   The CollapsibleNode renders native <details>/<summary>; these styles draw the
+   ▸/▾ triangle and hide/show the body, which Tailwind utilities can't express. */
+/* 用语义变量,深浅色自动适配(原先硬编码 hex 在深色态会出白块)。 */
+.Collapsible__container {
+  margin: 0.5rem 0;
+  border: 1px solid rgb(var(--c-edge));      /* border-edge */
+  border-radius: 0.75rem;                    /* rounded-xl */
+  background: rgb(var(--c-panel));           /* bg-panel */
+  box-shadow: 0 1px 2px rgb(var(--c-ink) / 0.04); /* elev-soft 近似 */
+  overflow: hidden;
+}
+.Collapsible__title {
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem 0.5rem 2rem;
+  font-weight: 600;
+  color: rgb(var(--c-ink));                  /* text-ink */
+  background: rgb(var(--c-panel2));          /* bg-panel2 */
+  list-style: none;
+  outline: none;
+}
+.Collapsible__title::-webkit-details-marker { display: none; }  /* 去掉浏览器默认三角 */
+.Collapsible__title::before {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  width: 0; height: 0;
+  border: 5px solid transparent;
+  border-left-color: rgb(var(--c-accent));   /* accent 三角 ▸ */
+  transform: translateY(-50%);
+  transition: transform 0.15s ease;
+}
+.Collapsible__container[open] > .Collapsible__title::before {
+  transform: translateY(-50%) rotate(90deg);  /* 展开时变 ▾ */
+  border-left-color: rgb(var(--c-accent));
+}
+.Collapsible__title:focus-visible { box-shadow: inset 0 0 0 2px rgb(var(--c-accent)); } /* ring-accent */
+.Collapsible__content {
+  padding: 0.625rem 0.875rem;
+  color: rgb(var(--c-ink));
+}
+.Collapsible__container:not([open]) > .Collapsible__content { display: none; }
+
+/* 块公式(EquationNode 的 KaTeX display):KaTeX 默认给 .katex-display 加 margin:1em 0,
+   与公式框自身的 py-2 内距叠加 → 上下空白过大。归零,间距交给外层容器(my-1 + py-2)。 */
+.katex-display { margin: 0 !important; }
+
+/* ---------------------------------------------------------------------------
+   Slash "/" component-picker (LexicalTypeaheadMenuPlugin) — the menu container
+   is appended to <body> with position:absolute and NO z-index, so inside the
+   note editor's Modal (fixed inset-0 z-50) it gets painted *behind* the modal
+   and is invisible. Lift it above every app overlay (max in use ≈ z-100).
+--------------------------------------------------------------------------- */
+#typeahead-menu { z-index: 1000; }
+
+/* 幻灯片模版「方角」(几何粗野):幻灯片内全部圆角归零;一处生效全版式。 */
+.lx-slide[data-sharp] [class*="rounded"] { border-radius: 0 !important; }
+/* 幻灯片模版「辉光」(霓虹):卡片/方框加霓虹外发光,色取自舞台的 --lx-glow(=主题 accent)。 */
+.lx-slide[data-glow] [class*="rounded-2xl"],
+.lx-slide[data-glow] [class*="rounded-xl"],
+.lx-slide[data-glow] [class*="rounded-lg"] {
+  box-shadow: 0 0 16px -2px var(--lx-glow), inset 0 0 12px -7px var(--lx-glow);
+}
+
+/* 画板(Excalidraw)隐藏「Library」素材库按钮 —— 用不到,避免干扰。 */
+.excalidraw .default-sidebar-trigger { display: none !important; }
+
+/* 画板:容器较小时 Excalidraw 切「移动端」布局,底部会出现一条满宽控件横条
+   (☰/撤销/重做/缩放)。用户要求:矮屏(移动端)直接不显示这条底栏 —— 点「放大」后
+   容器变大走桌面端布局(.excalidraw--mobile 不再命中),控件就自然在左下角正常显示。 */
+.excalidraw--mobile .App-bottom-bar {
+  display: none !important;
+}
+
+/* 画板去除全部第三方/品牌外链内容(审计 wf_ba7184a5)。Excalidraw 0.18 无
+   prop 可关这些,hrefs 是硬编码、langCode 删不掉,只能按已验证的类名隐藏。
+   ① 帮助弹窗顶部那排外链(文档/博客/GitHub 反馈/YouTube)—— 用户反馈的漏网处。
+      只隐藏链接行 .HelpDialog__header,保留下方键盘快捷键说明 .HelpDialog__islands-container。
+      该弹窗经底部「?」按钮 / 「?」键 / 菜单三路打开,故必须从弹窗内部隐藏。 */
+.excalidraw .HelpDialog .HelpDialog__header { display: none !important; }
+/* ② 素材库面板:浏览 libraries.excalidraw.com 按钮 + 「Excalidraw 素材库」品牌头
+      + 发布弹窗外链说明(素材库触发器已隐藏,这些是多重保险)。 */
+.excalidraw .library-menu-browse-button { display: none !important; }
+.excalidraw .library-menu-items-container__header--excal { display: none !important; }
+.excalidraw .publish-library-note { display: none !important; }
+/* ③ 文生图(Mermaid)弹窗里的 mermaid.js.org 文档链接(已用 aiEnabled={false}
+      关掉入口,此为多重保险)。 */
+.excalidraw .ttd-dialog-desc a { display: none !important; }
+
+/* 画板主色覆盖为系统薰衣草紫 #6d5ae6(默认 Excalidraw 是 #6965db,略偏冷)。
+   Excalidraw 用同选择器 .excalidraw 定义这些变量且后注入,故须 !important 压过;
+   仅作用于浅色态,深色模式保留 Excalidraw 自身的反相配色。
+   覆盖整套主色族 → 菜单选中高亮 / 工具栏激活 / 选区 / 焦点全部与系统统一。 */
+.excalidraw:not(.theme--dark) {
+  --color-primary: #6d5ae6 !important;
+  --color-primary-darker: #5d49d6 !important;
+  --color-primary-darkest: #4a39b0 !important;
+  --color-primary-hover: #5d49d6 !important;
+  --color-primary-light: #e9e6fc !important;
+  --color-primary-light-darker: #ddd9f8 !important;
+  --color-brand-hover: #5d49d6 !important;
+  --color-brand-active: #4a39b0 !important;
+  --color-selection: #6d5ae6 !important;
+}
+
+/* ===========================================================================
+   DARK MODE — overrides for spots that hardcode light hex values (the
+   token-driven classes flip on their own via the channel vars above).
+   Higher specificity than the base rules, so source order doesn't matter.
+   =========================================================================== */
+:root[data-theme="dark"] body::before {
+  background:
+    radial-gradient(48vmax 30vmax at 50% -16%, rgba(124, 92, 255, 0.12), transparent 62%),
+    radial-gradient(36vmax 26vmax at 100% 0%, rgba(0, 179, 214, 0.07), transparent 58%);
+}
+:root[data-theme="dark"] ::selection {
+  background: rgba(141, 126, 246, 0.34);
+  color: #e9eaf0;
+}
+:root[data-theme="dark"] * {
+  scrollbar-color: #45474f transparent;
+}
+:root[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background-color: #45474f;
+}
+:root[data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
+  background-color: #565963;
+}
+/* Frosted glass panels (modals / login) → dark frosted */
+:root[data-theme="dark"] .glass,
+:root[data-theme="dark"] .panel-glass {
+  background: rgba(30, 31, 38, 0.78);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+:root[data-theme="dark"] .card-glass {
+  background: rgba(30, 31, 38, 0.7);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+/* Chat markdown (.prose-chat) hardcoded near-blacks / light fills */
+:root[data-theme="dark"] .prose-chat h1,
+:root[data-theme="dark"] .prose-chat h2,
+:root[data-theme="dark"] .prose-chat h3,
+:root[data-theme="dark"] .prose-chat strong {
+  color: #f0f1f6;
+}
+:root[data-theme="dark"] .prose-chat code {
+  background: #2a2c34;
+}
+:root[data-theme="dark"] .prose-chat pre {
+  background: #23242b;
+}
+:root[data-theme="dark"] .prose-chat th {
+  background: #2a2c34;
+}
+/* Citation chips + highlight */
+:root[data-theme="dark"] .cite {
+  background: rgba(141, 126, 246, 0.22);
+  color: #c7bef9;
+}
+:root[data-theme="dark"] .cite:hover {
+  background: rgba(141, 126, 246, 0.34);
+}
+:root[data-theme="dark"] ::highlight(cite-passage) {
+  background-color: rgba(141, 126, 246, 0.34);
+  color: #e9eaf0;
+}
+
+/* ---------------------------------------------------------------------------
+ * 流光旋转边框(demo 5:边框霓虹旋转 + 轻微呼吸)—— 用于「添加来源」弹窗的搜索框。
+ * 用 @property 让 conic-gradient 的角度可动画;老 Safari 不支持时退化为静态渐变边框。
+ * ------------------------------------------------------------------------- */
+@property --flow-ang {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.flow-border {
+  position: relative;
+  border-radius: 16px;
+  padding: 1.5px;
+  animation: flow-breathe 2.8s ease-in-out infinite;
+}
+.flow-border > * {
+  position: relative;
+  z-index: 1;
+}
+.flow-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(from var(--flow-ang), #6d5ae6, #a78bfa, #c4b5fd, #8b7ef6, #6d5ae6);
+  animation: flow-spin 4s linear infinite;
+  z-index: 0;
+}
+.flow-border::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 22px;
+  background: conic-gradient(from var(--flow-ang), #6d5ae6, #a78bfa, #c4b5fd, #8b7ef6, #6d5ae6);
+  filter: blur(14px);
+  opacity: 0.4;
+  z-index: -1;
+  animation: flow-spin 4s linear infinite;
+}
+@keyframes flow-spin {
+  to {
+    --flow-ang: 360deg;
+  }
+}
+@keyframes flow-breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.015);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-border,
+  .flow-border::before,
+  .flow-border::after {
+    animation: none;
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "open-source release candidate tracked tree",
+  "assets": [
+    {
+      "path": "app/apple-icon.png",
+      "sha256": "12533eef872ec16a464999575dd4220a8d201955840554fb464520db02651695",
+      "origin": "project brand asset",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "path": "app/icon.png",
+      "sha256": "618b03303fd5f610c411271dbdc7216e738ebc1143c0a4676c01a735e1cd49e3",
+      "origin": "project brand asset",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "path": "public/brand/yuanbiji-head-white.png",
+      "sha256": "350a8c41b1d3035c85e85708a23099ebbe9f38af15e7f0573db0f651624695c4",
+      "origin": "project brand asset",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "path": "public/brand/yuanbiji-head.png",
+      "sha256": "8faf078fe67d65c269f2126db5642b95b902a878fa06d60e3290ffe3e2c3d61b",
+      "origin": "project brand asset",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "path": "public/brand/yuanbiji-line.png",
+      "sha256": "185dc94d3c1925a7d1df9b8e5541ec80127723efcfb6e9613e17d149afad3a11",
+      "origin": "project brand asset",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "path": "public/help/chat-actions.png",
+      "sha256": "17a438e09c7449ede141c23e6710de2133113f269862627f708bbddccd6b5b65",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/chat-citation.png",
+      "sha256": "4fee9275eb9ef9f34b7ca13a1727be7c14afbc7b2051c3f9164b0ebec011e670",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/chat.png",
+      "sha256": "abc71c6e89c9370a4e7a1a61df504156e0602497b369b2eeb9123b375c468919",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/config.png",
+      "sha256": "ee35a565fde17923ef37e500f9b29b9037999a317590c6547ac1ac337649865f",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/doc-viewer.png",
+      "sha256": "d4113433e1c902ebf151c75b8b8dd415c38af88a87917919db6dc8d325877195",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/gen-audio.png",
+      "sha256": "a14e5f39cff29b824c1fb6595eac52a2cd9239333bffe04d9cf46475033f4c87",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/gen-board.png",
+      "sha256": "1a1409a94af2bcd5ea099b990c16d7f8dde94809efe9e3090524a98dde8e6d7d",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/gen-mindmap.png",
+      "sha256": "a1ee33be47a92e5b4fb8bfb124996e2667694bcdbdb2423257b3e24e9017f8b8",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/gen-quiz.png",
+      "sha256": "bdd4b4581705323a10205e1f1f67d250a6d6cd899de1c2312f4aa3fb1dc08f57",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/gen-report.png",
+      "sha256": "0e55c3e4162e551e2d5bc0ac41b6bbcc8b9154bea7fe49899ee213cdb328f365",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/gen-slides.png",
+      "sha256": "73672976f5e36d048b18aa79d24b7b8ca6c5af452d8d446018aecd2d9e549491",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/gen-table.png",
+      "sha256": "842a368e8a7267660e862ab0ebf2156ee5f995c29544634e69eb716a201c2cd8",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/notes.png",
+      "sha256": "2d7fe18aa30f8b9fa5bba6b0ffdb3f6a77c005921d348c9e7f12a552ea167b26",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/settings.png",
+      "sha256": "7fd630f859c52ac9ad705631ccfcb81f187a24ecd1d67241be594a0515a71b98",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/share.png",
+      "sha256": "edcd318c30dece3a3f8e77d882c3d15d3d6bb9b95b7e0c78c05c7a638a83468b",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/signin.png",
+      "sha256": "54d1db2f090fe87b189ddc21ca8e87d2f5f8f570b175dc3d15650dc4e3497151",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/sources-status.png",
+      "sha256": "18dc96ea5efee43ab265cc836ce641dd655107d09f1634e65429c18b729a6c94",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/sources.png",
+      "sha256": "8152a774713d8d52dd215342cbf49ed26e30fb3aaad8113621ea2566a60202a3",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "public/help/studio.png",
+      "sha256": "b28ead71510d8c8f3926129d65143e3ef18a1262cee570d32b3e51e628034772",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    }
+  ]
+}

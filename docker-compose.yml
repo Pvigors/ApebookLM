@@ -1,0 +1,146 @@
+# =============================================================================
+# ApebookLM 社区版自托管编排
+#
+# 复制 .env.example 为 .env 后运行：docker compose up -d --build
+# 端口只绑 127.0.0.1,外网一律经 nginx(见 deploy/nginx.conf)接 TLS。
+# 数据使用具名卷持久化，重建容器不会丢失。
+# =============================================================================
+services:
+  # 启动前只接收数据库配置并做 fail-closed 校验；不接收模型/API 密钥，也不联网。
+  config-check:
+    build:
+      context: .
+      target: config-validator
+    restart: "no"
+    environment:
+      SELF_HOSTING_DATABASE_MODE: ${SELF_HOSTING_DATABASE_MODE:-compose}
+      DATABASE_URL: ${DATABASE_URL:?必须在 env 文件设置 DATABASE_URL}
+      POSTGRES_USER: ${POSTGRES_USER:-apebooklm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-apebooklm}
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # 自托管 PostgreSQL(用 RDS 则整段删除)。凭据来自 --env-file(POSTGRES_* 三项)。
+  db:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    restart: always
+    depends_on:
+      config-check:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-apebooklm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?compose 自带 db 必须在 env 文件设 POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-apebooklm}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-apebooklm} -d ${POSTGRES_DB:-apebooklm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      target: runner
+    restart: always
+    # 等 db 健康后再起,避免首启连不上库。用 RDS 时删掉此 depends_on。
+    depends_on:
+      db:
+        condition: service_healthy
+    # 只对本机(nginx)暴露,不监听公网网卡,杜绝绕过反代直连。
+    ports:
+      - "127.0.0.1:${HOST_PORT:-3000}:3000"
+    # 环境变量由 --env-file 指向的文件注入(.env / .env.staging / .env.prod)。
+    # ENV_FILE 来自 --env-file 那份文件的首行声明;缺省回落到 .env。
+    # DATABASE_URL 也在该文件里(自托管填 @db:5432,RDS 填 RDS 连接串)。
+    env_file:
+      - ${ENV_FILE:-.env}
+    environment:
+      # 容器内端口固定为 3000；宿主机端口只通过 HOST_PORT 调整。
+      PORT: "3000"
+      # NBLM_WORKER_ENABLED 是任务处理总开关。
+      NBLM_WORKER_ENABLED: ${NBLM_WORKER_ENABLED:-1}
+      # web 只跑非 CAD 车道；CAD 必须由下方独立容器认领。
+      NBLM_NON_CAD_WORKER_ENABLED: "1"
+      NBLM_CAD_WORKER_ENABLED: "0"
+      # 官方自托管镜像已经过独立 worker + FreeCAD 验收，默认展示 CAD 入口。
+      NBLM_CAD_ENABLED: ${NBLM_CAD_ENABLED:-1}
+      NBLM_WORKER_ID: ${NBLM_WORKER_ID:-standalone}
+    volumes:
+      - media-data:/app/.data
+      - cad-data:/app/.data/cad
+    healthcheck:
+      # 打业务就绪检查；它会先完成幂等 schema 初始化，再允许 CAD 容器启动。
+      # 用 node 自带 fetch,镜像里必有 node,无需额外装 wget/curl。
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  cad-worker:
+    build:
+      context: .
+      target: cad-runner
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      # 空库首次启动时必须让 Web 独占 schema 初始化；否则两个进程同时执行
+      # CREATE TABLE IF NOT EXISTS 仍可能在 PostgreSQL 系统目录发生竞争。
+      web:
+        condition: service_healthy
+    env_file:
+      - ${ENV_FILE:-.env}
+    environment:
+      PORT: "3000"
+      NBLM_WORKER_ENABLED: ${NBLM_WORKER_ENABLED:-1}
+      NBLM_NON_CAD_WORKER_ENABLED: "0"
+      NBLM_CAD_WORKER_ENABLED: ${NBLM_CAD_WORKER_ENABLED:-1}
+      NBLM_CAD_ENABLED: ${NBLM_CAD_ENABLED:-1}
+      NBLM_INTERNAL_CAD_WORKER_HOST: "1"
+      NBLM_WORKER_ID: ${NBLM_WORKER_ID:-standalone}
+      CAD_REQUIRE_EXTERNAL_STEP_VALIDATOR: "1"
+      CAD_EXTERNAL_STEP_VALIDATOR_BIN: /usr/bin/python3
+      PYTHONPATH: /usr/lib/freecad-python3/lib
+      HOME: /tmp
+    # UID/GID 默认使用镜像内 node 用户，也可按宿主机卷权限覆盖。
+    user: "${NBLM_CAD_RUNTIME_UID:-1000}:${NBLM_CAD_RUNTIME_GID:-1000}"
+    read_only: true
+    volumes:
+      # 原生解析器只能访问 CAD 成品，不得读写其它媒体。
+      - cad-data:/app/.data/cad
+    # CAD/FreeCAD 异常或恶意几何只能耗尽本容器配额，不与主会话 web 抢满进程内存。
+    mem_limit: 3g
+    cpus: 2.0
+    pids_limit: 256
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=512m
+      - /app/.data/cad-tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777
+    # 不映射宿主机端口；内部健康请求同时唤醒 CAD 车道，最迟 10s 拾取新任务。
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/internal/cad-worker-wake').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 40s
+      retries: 3
+      start_period: 50s
+
+volumes:
+  postgres-data:
+  media-data:
+  cad-data:

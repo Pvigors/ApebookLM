@@ -1,0 +1,41 @@
+/* 微信开放平台内嵌二维码的自定义样式。
+ *
+ * 微信 qrconnect 页面用 href 参数接收一份外部 CSS(必须是 https 且可公开访问),
+ * 用来改它自己那个 .impowerBox 面板。不改的话,它默认带「微信登录」标题栏 + 说明文字,
+ * 整体比我们卡片里那个 176×176 的槽位高得多,内容会被裁掉一角。
+ *
+ * 这里只做三件事:去掉标题与说明、把二维码对齐 176、清掉外边距,
+ * 让它正好填满我们的框。改动前请对照 components/LoginClient.tsx 里 iframe 的尺寸。
+ */
+.impowerBox .title,
+.impowerBox .info,
+.impowerBox .status_txt {
+  display: none;
+}
+
+.impowerBox .qrcode {
+  width: 176px;
+  height: 176px;
+  margin: 0;
+  border: none;
+}
+
+.impowerBox .wrp_code,
+.impowerBox {
+  margin: 0;
+  padding: 0;
+}
+
+/* 扫码后的「已扫描,请在手机点击确认」状态:微信会切到 .status 区域,
+   这里保留可见并压紧,避免用户扫完看到一片空白。 */
+.impowerBox .status {
+  margin: 0;
+  padding: 6px 0 0;
+  text-align: center;
+}
+
+.impowerBox .status p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #5b5d66;
+}

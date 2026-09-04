@@ -1,0 +1,64 @@
+# 猿笔记 · robots.txt
+# 允许索引公开可发现页面,禁止索引私有工作台、后台、公开分享的具体制品与 API。
+# 目标不是"绝对防爬"(遵守 robots 是自觉行为),而是:
+#  ① 让守规的搜索引擎只收录营销价值高的公开页;
+#  ② 留下"曾主张过收敛"的证据链,便于后续维权举证。
+
+User-agent: *
+Allow: /$
+Allow: /help
+Allow: /help/
+Disallow: /api/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin-login
+Disallow: /notebook
+Disallow: /notebook/
+# 制品直达链接 ?doc=<id> 是私域访问路径,不希望被枚举索引
+Disallow: /*?doc=
+Disallow: /*&doc=
+# 登录/账号页无 SEO 价值
+Disallow: /login
+Disallow: /auth/
+Disallow: /experience/
+# 生成失败页/临时页也不索引
+Disallow: /help/search
+Crawl-delay: 3
+
+# —— 明确拒绝主流 AI 训练/摘要爬虫 ——
+# 不希望本站原创内容(帮助中心 27 篇原创、公开笔记本)被用作模型训练素材。
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+user-agent: CCBot
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /

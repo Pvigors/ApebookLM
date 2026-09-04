@@ -1,0 +1,178 @@
+# ApebookLM CI —— push / PR 到 main 的全绿门禁:类型检查 + 单测 + 构建。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PG_ADMIN_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+      TRANSFORMERS_CACHE: ${{ github.workspace }}/.cache/transformers
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # better-sqlite3 / onnxruntime-node 需编译链;ubuntu-latest 自带 python3/make/g++,
+      # 无需额外 apt。npm ci 会触发原生编译。
+      - name: Install deps
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit --incremental false -p tsconfig.json
+
+      - name: Public release contract
+        run: npm run check:public
+
+      - name: Cache local embedding model
+        uses: actions/cache@v4
+        with:
+          path: .cache/transformers
+          key: embed-${{ runner.os }}-${{ hashFiles('package-lock.json', 'scripts/embed-cache.mjs') }}-bge-small-zh-v1.5-r75c43b069aac4d136ba6bc1122f995fedcfd2781
+
+      - name: Warm and verify local embedding model
+        run: |
+          node scripts/embed-health.mjs
+          node scripts/embed-cache.mjs verify-cache
+          LOCAL_EMBED_OFFLINE=1 node scripts/embed-health.mjs
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: bash scripts/build-ci.sh
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+  cad-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build isolated CAD worker image
+        run: >-
+          docker build --target cad-runner
+          --build-arg APT_MIRROR=deb.debian.org
+          --build-arg NPM_REGISTRY=https://registry.npmjs.org
+          --build-arg NODE_DISTURL=https://nodejs.org/download/release/
+          -t apebooklm-cad-worker:ci .
+      - name: Native FreeCAD STEP export/import smoke test
+        run: >-
+          docker run --rm
+          -e PYTHONPATH=/usr/lib/freecad-python3/lib
+          --entrypoint /usr/bin/python3
+          apebooklm-cad-worker:ci
+          /app/scripts/freecad-health.py
+      - name: Replicad to FreeCAD cross-tool STEP gate
+        run: >-
+          docker run --rm
+          -e CAD_EXTERNAL_STEP_VALIDATOR_BIN=/usr/bin/python3
+          -e PYTHONPATH=/usr/lib/freecad-python3/lib
+          --entrypoint node
+          apebooklm-cad-worker:ci
+          /app/scripts/cad-cross-validator-health.mjs
+      - name: Build Web runner image
+        run: >-
+          docker build --target runner
+          --build-arg APT_MIRROR=deb.debian.org
+          --build-arg NPM_REGISTRY=https://registry.npmjs.org
+          --build-arg NODE_DISTURL=https://nodejs.org/download/release/
+          -t apebooklm-web:ci .
+      - name: Generate CAD image SPDX SBOM and digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/container-release-evidence"
+          node scripts/generate-container-sbom.mjs apebooklm-cad-worker:ci --component cad-worker \
+            > "$RUNNER_TEMP/container-release-evidence/cad-worker.spdx.json"
+          docker image inspect --format '{{.Id}}' apebooklm-cad-worker:ci \
+            > "$RUNNER_TEMP/container-release-evidence/cad-worker.image-digest.txt"
+      - name: Generate Web image SPDX SBOM and digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/generate-container-sbom.mjs apebooklm-web:ci --component web \
+            > "$RUNNER_TEMP/container-release-evidence/web.spdx.json"
+          docker image inspect --format '{{.Id}}' apebooklm-web:ci \
+            > "$RUNNER_TEMP/container-release-evidence/web.image-digest.txt"
+          cd "$RUNNER_TEMP/container-release-evidence"
+          sha256sum ./*.spdx.json ./*.image-digest.txt > SHA256SUMS
+      - name: Upload container release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-release-evidence
+          path: ${{ runner.temp }}/container-release-evidence
+          if-no-files-found: error
+          retention-days: 30
+      - name: Standalone CAD worker readiness as non-root
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker network create apebooklm-cad-ci
+          docker run -d --name apebooklm-cad-ci-pg --network apebooklm-cad-ci \
+            -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=apebooklm \
+            --health-cmd='pg_isready -U postgres -d apebooklm' \
+            --health-interval=2s --health-timeout=2s --health-retries=30 \
+            postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+          for _ in $(seq 1 60); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' apebooklm-cad-ci-pg)" = healthy ] && break
+            sleep 1
+          done
+          [ "$(docker inspect -f '{{.State.Health.Status}}' apebooklm-cad-ci-pg)" = healthy ]
+
+          docker run -d --name apebooklm-cad-ci-worker --network apebooklm-cad-ci \
+            --read-only --tmpfs /tmp:rw,nosuid,nodev,noexec,size=512m \
+            --tmpfs /app/.data/cad-tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777 \
+            -e DATABASE_URL=postgres://postgres:postgres@apebooklm-cad-ci-pg:5432/apebooklm \
+            -e NBLM_WORKER_ENABLED=1 -e NBLM_NON_CAD_WORKER_ENABLED=0 \
+            -e NBLM_CAD_WORKER_ENABLED=1 -e NBLM_INTERNAL_CAD_WORKER_HOST=1 \
+            -e NBLM_WORKER_ID=cad-ci -e CAD_REQUIRE_EXTERNAL_STEP_VALIDATOR=1 \
+            apebooklm-cad-worker:ci
+          [ "$(docker inspect -f '{{.Config.User}}' apebooklm-cad-ci-worker)" = node ]
+          docker exec apebooklm-cad-ci-worker node -e 'process.exit(process.getuid() === 0 ? 1 : 0)'
+
+          ready=0
+          for _ in $(seq 1 60); do
+            if docker exec apebooklm-cad-ci-worker node -e '
+              fetch("http://127.0.0.1:3000/api/internal/cad-worker-wake", {signal:AbortSignal.timeout(10000)})
+                .then(async response=>{const body=await response.json();process.exit(
+                  response.ok && body.ok===true && body.validator==="freecad-native" ? 0 : 1
+                )}).catch(()=>process.exit(1));'; then ready=1; break; fi
+            sleep 2
+          done
+          [ "$ready" -eq 1 ]
+          docker exec apebooklm-cad-ci-pg psql -U postgres -d apebooklm -v ON_ERROR_STOP=1 -c \
+            "INSERT INTO app_settings(key,value,updated_at) VALUES ('jobs.worker_owner','cad-ci',0) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at"
+          docker exec apebooklm-cad-ci-worker node -e '
+            fetch("http://127.0.0.1:3000/api/internal/cad-worker-wake", {signal:AbortSignal.timeout(10000)})
+              .then(async response=>{const body=await response.json();process.exit(
+                response.ok && body.ok===true && body.validator==="freecad-native" && body.eligible===true ? 0 : 1
+              )}).catch(()=>process.exit(1));'
+      - name: Cleanup CAD readiness containers
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f apebooklm-cad-ci-worker apebooklm-cad-ci-pg 2>/dev/null || true
+          docker network rm apebooklm-cad-ci 2>/dev/null || true

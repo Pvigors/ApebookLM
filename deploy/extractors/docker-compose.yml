@@ -1,0 +1,74 @@
+services:
+  docling:
+    image: quay.io/docling-project/docling-serve-cpu:v1.31.0
+    restart: unless-stopped
+    environment:
+      DOCLING_SERVE_API_KEY: ${DOCLING_SERVE_API_KEY:?请通过 --env-file 配置 DOCLING_SERVE_API_KEY}
+      DOCLING_SERVE_ENABLE_UI: "false"
+      DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "false"
+      DOCLING_SERVE_ALLOW_EXTERNAL_PLUGINS: "false"
+      DOCLING_SERVE_ALLOW_CUSTOM_VLM_CONFIG: "false"
+      DOCLING_SERVE_MAX_FILE_SIZE: "26214400"
+      DOCLING_SERVE_MAX_NUM_PAGES: "100"
+      DOCLING_SERVE_MAX_DOCUMENT_TIMEOUT: "50"
+      DOCLING_SERVE_MAX_SYNC_WAIT: "55"
+      DOCLING_SERVE_ENG_LOC_NUM_WORKERS: "1"
+      DOCLING_NUM_THREADS: "2"
+      DOCLING_SERVE_CORS_ORIGINS: "[]"
+      DOCLING_SERVE_DEBUG_ERROR_DETAILS: "false"
+    expose:
+      - "5001"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 3g
+    cpus: 1.5
+    tmpfs:
+      - /tmp:size=1g,mode=1777
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:5001/ready',headers={'X-Api-Key':os.environ.get('DOCLING_SERVE_API_KEY','')}), timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 120s
+    networks: [apebooklm]
+
+  crawl4ai:
+    image: unclecode/crawl4ai:0.9.2
+    restart: unless-stopped
+    environment:
+      CRAWL4AI_API_TOKEN: ${CRAWL4AI_API_TOKEN:?请通过 --env-file 配置 CRAWL4AI_API_TOKEN}
+      CRAWL4AI_ALLOW_INTERNAL_URLS: "false"
+      CRAWL4AI_ALLOW_INSECURE_TLS: "false"
+      CRAWL4AI_HOOKS_ENABLED: "false"
+      CRAWL4AI_EXECUTE_JS_ENABLED: "false"
+    expose:
+      - "11235"
+    volumes:
+      - ./crawl4ai.config.yml:/app/config.yml:ro
+    shm_size: 1gb
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 384
+    mem_limit: 3g
+    cpus: 1.5
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+      - /var/lib/redis:uid=999,gid=999,mode=0700
+      - /var/lib/crawl4ai/outputs:uid=999,gid=999,mode=0700
+      - /home/appuser/.crawl4ai:uid=999,gid=999,mode=0700
+      - /home/appuser/.cache/url_seeder:uid=999,gid=999,mode=0700
+      - /home/appuser/.gunicorn:uid=999,gid=999,mode=0700
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -H \"Authorization: Bearer $${CRAWL4AI_API_TOKEN}\" http://127.0.0.1:11235/hooks/info >/dev/null"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 60s
+    networks: [apebooklm]
+
+networks:
+  apebooklm:
+    external: true
+    name: apebooklm_default
