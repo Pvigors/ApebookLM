@@ -15,6 +15,36 @@
       "license": "CC-BY-4.0"
     },
     {
+      "path": "docs/images/add-sources.png",
+      "sha256": "28b33ceb3955d5c1636982b35f33cf7e0464709246974133a1e24b7150436ffe",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "docs/images/cad-viewer.png",
+      "sha256": "9c31153c9fbe5d0646925bdf54176840a2e8cc2084fdca6167f49de329c69065",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "docs/images/hero.png",
+      "sha256": "80986a56be1ea137ea9a747d44c32a28c84ae7ba7994e6399ff7c8dc30437654",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "docs/images/model-api-settings.png",
+      "sha256": "a20a91c0a717c8a91e48da97cc23361ef16c8340a65a8c3a624e2179b12db6ec",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
+      "path": "docs/images/workspace.png",
+      "sha256": "24b81f2c1f25c675bd02b266ac0e93c95530dba4692a25256afef77e8d1e4601",
+      "origin": "project UI rendered with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
       "path": "public/brand/yuanbiji-head-white.png",
       "sha256": "350a8c41b1d3035c85e85708a23099ebbe9f38af15e7f0573db0f651624695c4",
       "origin": "project brand asset",

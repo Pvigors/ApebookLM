@@ -4,9 +4,9 @@
 
 `app/icon.png`、`app/apple-icon.png` 与 `public/brand/` 下的 Logo 和品牌图版权归 ApebookLM Contributors 所有，并按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 许可复制、修改与分发。该版权许可不授予商标权；名称和标识的使用边界另见 `TRADEMARKS.md`。
 
-## 帮助中心截图
+## 项目界面截图
 
-`public/help/*.png` 是使用本项目组件和模拟数据生成的文档截图，不包含真实用户资料。它们随本项目文档按 GNU AGPL v3 分发。
+`public/help/*.png` 和 `docs/images/*.png` 是使用本项目组件和模拟数据生成的文档截图，不包含真实用户资料。它们随本项目文档按 GNU AGPL v3 分发。
 
 ## 第三方内容
 
