@@ -39,6 +39,12 @@
       "license": "AGPL-3.0-only"
     },
     {
+      "path": "docs/images/social-preview.png",
+      "sha256": "ce687d253c3cf88ec2dce7148424b8ce485317bf65254b36e2aa373083cc1c3a",
+      "origin": "project social cover composed from project UI and brand assets with synthetic data",
+      "license": "AGPL-3.0-only"
+    },
+    {
       "path": "docs/images/workspace.png",
       "sha256": "24b81f2c1f25c675bd02b266ac0e93c95530dba4692a25256afef77e8d1e4601",
       "origin": "project UI rendered with synthetic data",

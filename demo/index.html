@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#f7f8fc">
+    <meta name="description" content="通过真实界面截图了解 ApebookLM：中文资料、引用问答、个人模型 API 与自托管。示例导览不处理文件、不调用模型。">
+    <meta http-equiv="Content-Security-Policy" content="connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <title>ApebookLM · 示例导览</title>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="ApebookLM — Your sources. Answers you can trace.">
+    <meta property="og:description" content="Explore a self-hosted research workspace with citations, BYOK model APIs, and CAD exports. Sample-data tour.">
+    <meta property="og:image" content="https://pvigors.github.io/ApebookLM/docs/images/social-preview.png">
+    <meta property="og:url" content="https://pvigors.github.io/ApebookLM/">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="../public/brand/yuanbiji-head.png" type="image/png">
+    <link rel="stylesheet" href="./demo.css">
+    <script src="./demo.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#tour" data-i18n="skip">跳到示例导览</a>
+
+    <header class="site-header page-width">
+      <a class="brand" href="https://github.com/Pvigors/ApebookLM" aria-label="ApebookLM GitHub">
+        <span class="brand-mark"><img src="../public/brand/yuanbiji-head-white.png" width="28" height="28" alt=""></span>
+        <span>ApebookLM<span class="brand-subtitle" data-i18n="brandSubtitle">猿笔记 · 开源研究工作台</span></span>
+      </a>
+      <div class="header-actions">
+        <div class="language-switch js-only" role="group" aria-label="导览语言 / Tour language">
+          <button type="button" data-language="zh" lang="zh-CN" aria-pressed="true">中文</button>
+          <button type="button" data-language="en" lang="en" aria-pressed="false">EN</button>
+        </div>
+        <a class="header-repo" href="https://github.com/Pvigors/ApebookLM"><span data-i18n="repo">GitHub 仓库</span><span aria-hidden="true">↗</span></a>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro page-width" aria-labelledby="intro-title">
+        <div class="eyebrow"><span class="status-dot" aria-hidden="true"></span><span data-i18n="demoLabel">示例导览</span><span class="eyebrow-divider" aria-hidden="true"></span><span class="eyebrow-secondary" data-i18n="sourceLabel">来自真实产品界面</span></div>
+        <h1 id="intro-title"><span data-i18n="headlineFirst">把资料放在一起，</span><br><span class="accent-text" data-i18n="headlineSecond">让答案有迹可循。</span></h1>
+        <p class="intro-description" data-i18n="intro">从中文资料出发，选择来源、核对引用、留下笔记。跟着五个界面，看看 ApebookLM 如何串起这条工作流。</p>
+        <p class="demo-notice"><span aria-hidden="true">◇</span><span data-i18n="notice">使用示例数据，本页不处理文件、不调用模型。</span></p>
+      </section>
+
+      <section id="tour" class="tour page-width" aria-label="产品示例导览" tabindex="-1">
+        <div class="tour-layout">
+          <div class="preview-column">
+            <figure class="preview-window" aria-labelledby="screen-caption">
+              <div class="window-bar">
+                <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+                <span class="window-title" data-i18n="windowTitle">ApebookLM / 示例工作台</span>
+                <span class="static-label" data-i18n="staticLabel">界面截图</span>
+              </div>
+              <div id="screen-stage" class="screen-stage">
+                <div class="citation-intro" hidden>
+                  <span class="small-label" data-i18n="citationLabel">引用问答 · 产品帮助示例</span>
+                  <h3 data-i18n="citationHeadline">一个结论，一段可回看的原文。</h3>
+                </div>
+                <img id="screen-image" class="screen-image" src="../docs/images/workspace.png" width="1440" height="900" fetchpriority="high" alt="ApebookLM 三栏工作台：左侧选择来源，中间问答，右侧管理笔记和生成内容。">
+                <p class="citation-outro" hidden data-i18n="citationOutro">在实际应用中，点击引用编号即可定位来源并核对对应文本。此处展示的是静态截图。</p>
+              </div>
+              <figcaption id="screen-caption" class="screen-caption"><span data-i18n="imageNote">截图内的按钮仅作展示。</span><a id="original-image" href="../docs/images/workspace.png" target="_blank" rel="noopener noreferrer"><span data-i18n="viewImage">查看原图</span><span aria-hidden="true">↗</span><span class="sr-only" data-i18n="newTab">（新标签页）</span></a></figcaption>
+            </figure>
+
+            <nav class="step-nav js-only" aria-label="选择导览步骤">
+              <ol>
+                <li><button type="button" data-step="0" aria-current="step" aria-controls="screen-stage step-details"><span class="step-thumbnail"><img src="../docs/images/workspace.png" width="1440" height="900" alt="" loading="lazy"></span><span class="step-nav-label"><span class="step-number">01</span><span data-i18n="nav0">工作台</span></span></button></li>
+                <li><button type="button" data-step="1" aria-controls="screen-stage step-details"><span class="step-thumbnail"><img src="../docs/images/add-sources.png" width="1440" height="900" alt="" loading="lazy"></span><span class="step-nav-label"><span class="step-number">02</span><span data-i18n="nav1">添加来源</span></span></button></li>
+                <li><button type="button" data-step="2" aria-controls="screen-stage step-details"><span class="step-thumbnail citation-thumbnail"><img src="../public/help/chat-citation.png" width="460" height="126" alt="" loading="lazy"></span><span class="step-nav-label"><span class="step-number">03</span><span data-i18n="nav2">核对引用</span></span></button></li>
+                <li><button type="button" data-step="3" aria-controls="screen-stage step-details"><span class="step-thumbnail"><img src="../docs/images/model-api-settings.png" width="1440" height="900" alt="" loading="lazy"></span><span class="step-nav-label"><span class="step-number">04</span><span data-i18n="nav3">模型 API</span></span></button></li>
+                <li><button type="button" data-step="4" aria-controls="screen-stage step-details"><span class="step-thumbnail"><img src="../docs/images/cad-viewer.png" width="1440" height="900" alt="" loading="lazy"></span><span class="step-nav-label"><span class="step-number">05</span><span data-i18n="nav4">CAD 辅助</span></span></button></li>
+              </ol>
+            </nav>
+          </div>
+
+          <aside id="step-details" class="step-details" aria-labelledby="step-title">
+            <div class="step-detail-top"><span class="section-kicker" data-i18n="stepKicker">一起走一遍</span><span id="step-count" class="step-count" aria-hidden="true">01 <span>/ 05</span></span></div>
+            <div class="progress-track" aria-hidden="true"><span class="is-complete"></span><span></span><span></span><span></span><span></span></div>
+            <h2 id="step-title">从一张工作台开始</h2>
+            <p id="step-description" class="step-description">资料、对话、笔记各在其位。从选择证据到留下成果，在一个笔记本里完成。</p>
+            <ul id="step-points" class="step-points">
+              <li>左侧：汇集资料，并勾选本次使用的来源。</li>
+              <li>中间：围绕已选内容提问，继续追问。</li>
+              <li>右侧：保存笔记，管理报告、导图等内容。</li>
+            </ul>
+            <div class="detail-note"><span class="note-mark" aria-hidden="true">i</span><p id="step-note">笔记本默认私有。对外分享前，请确认资料的再分发权限。</p></div>
+            <div class="tour-controls js-only">
+              <button id="previous-step" class="button button-secondary" type="button" disabled><span aria-hidden="true">←</span><span data-i18n="previous">上一步</span></button>
+              <button id="next-step" class="button button-primary" type="button"><span id="next-label">下一步</span><span id="next-arrow" aria-hidden="true">→</span></button>
+            </div>
+            <p class="keyboard-hint js-only"><span aria-hidden="true"><kbd>←</kbd><kbd>→</kbd></span><span data-i18n="keyboardHint">在导览中也可用方向键切换</span></p>
+          </aside>
+        </div>
+        <p id="tour-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+        <noscript><p class="noscript-note">启用 JavaScript 可切换五个界面和导览语言。你也可以直接在 <a href="https://github.com/Pvigors/ApebookLM">GitHub 仓库</a>浏览全部截图与自托管说明。</p></noscript>
+      </section>
+
+      <section class="next-step page-width" aria-labelledby="next-step-title">
+        <div class="next-step-copy"><span class="section-kicker" data-i18n="nextKicker">从了解，到亲手使用</span><h2 id="next-step-title" data-i18n="nextTitle">在自己的环境里，继续探索。</h2><p data-i18n="nextDescription">社区版提供源码与 Docker 自托管。实际使用需要配置数据库、模型服务和管理员登录；模型等外部服务可能产生费用。</p></div>
+        <div class="next-step-actions"><a class="button button-primary" href="https://github.com/Pvigors/ApebookLM/archive/refs/tags/v0.1.0.zip"><span data-i18n="download">下载 v0.1.0 源码</span><span aria-hidden="true">↓</span></a><a id="hosting-guide" class="text-link" href="https://github.com/Pvigors/ApebookLM/blob/main/docs/SELF_HOSTING.md"><span data-i18n="guide">阅读自托管指南</span><span aria-hidden="true">↗</span></a></div>
+      </section>
+
+      <div class="data-boundary page-width"><span class="boundary-label" data-i18n="boundaryLabel">关于数据</span><p data-i18n="boundary">这份静态导览不接收资料。实际部署中，选用的模型、搜索等外部服务可能接收完成请求所需的内容；自托管不自动等于完全离线。</p></div>
+    </main>
+
+    <footer class="site-footer page-width"><span>ApebookLM <span class="footer-dot" aria-hidden="true">·</span> AGPL-3.0-only</span><p data-i18n="independent">独立开源项目，与 Google / NotebookLM 无隶属或合作关系。</p><a href="https://github.com/Pvigors/ApebookLM/issues/new/choose" data-i18n="feedback">反馈使用问题 ↗</a></footer>
+  </body>
+</html>

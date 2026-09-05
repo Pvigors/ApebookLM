@@ -4,6 +4,8 @@
 
 <h1 align="center">ApebookLM（猿笔记）</h1>
 
+<p align="center">简体中文 · <a href="README_EN.md">English</a> · <a href="https://pvigors.github.io/ApebookLM/">交互导览</a></p>
+
 <p align="center">
   <strong>把分散的中文资料，变成可核对、可复用、可自托管的研究工作台。</strong>
 </p>
@@ -26,6 +28,7 @@
   <strong><a href="https://github.com/Pvigors/ApebookLM/archive/refs/tags/v0.1.0.zip">下载 v0.1.0 源码</a></strong>
   · <a href="https://github.com/Pvigors/ApebookLM/releases/tag/v0.1.0">Release 与离线资产</a>
   · <a href="docs/SELF_HOSTING.md">自托管指南</a>
+  · <a href="https://github.com/Pvigors/ApebookLM/releases/download/v0.1.0/apebooklm-intro-zh-60s.mp4">60 秒介绍视频</a>
   · <a href="CONTRIBUTING.md">参与贡献</a>
 </p>
 
@@ -128,11 +131,15 @@ CAD 在独立 worker 中生成。输入明确的对象、尺寸和约束后，�
 
 ## 下载
 
+想先了解界面？打开[中英文交互导览](https://pvigors.github.io/ApebookLM/)。导览使用示例截图，不接收文件或调用模型。完整功能需要自行部署。
+
 当前版本提供源码与 Docker 自托管部署，**暂不提供桌面安装包**。
 
 - [下载 v0.1.0 ZIP](https://github.com/Pvigors/ApebookLM/archive/refs/tags/v0.1.0.zip)
 - [下载 v0.1.0 tar.gz](https://github.com/Pvigors/ApebookLM/archive/refs/tags/v0.1.0.tar.gz)
 - [Release、离线嵌入模型包、校验文件与 SBOM](https://github.com/Pvigors/ApebookLM/releases/tag/v0.1.0)
+
+预构建镜像的初始化向导和独立编排见 [Docker 快速启动](docs/QUICKSTART.md)；请使用成功发布记录中的明确标签，旧版 v0.1.0 源码包不含这些新工具。
 
 ## 快速开始
 
@@ -162,6 +169,8 @@ OPENAI_API_KEY=<平台模型接口密钥>
 MODEL_API_CONFIG_SECRET=<openssl rand -hex 32 的输出>
 EXPORT_FP_SECRET=<另一份独立随机字符串>
 ```
+
+当前平台模型默认连接通义千问（Qwen）。使用其它供应商时，需要同时填写 `OPENAI_BASE_URL`、`OPENAI_CHAT_MODEL` 和 `OPENAI_VISION_MODEL`；仅修改 Key 不会自动切换供应商。
 
 配置预检会拒绝少于 24 位的弱数据库密码，以及与 `POSTGRES_USER`、`POSTGRES_PASSWORD` 或 `POSTGRES_DB` 不一致的 `DATABASE_URL`。
 
@@ -239,7 +248,7 @@ npm run check:public
 npm run build
 ```
 
-当前代码树包含 115 个测试文件和 780 个测试用例。CI 同时检查 TypeScript、公开树泄密 / 企业残留、本地嵌入模型的联网与严格离线路径、Next.js 生产构建、CAD 容器与 FreeCAD 交叉回读，并生成 SBOM。
+当前代码树包含 116 个测试文件和 785 个测试用例。CI 同时检查 TypeScript、公开树泄密 / 企业残留、本地嵌入模型的联网与严格离线路径、Next.js 生产构建、CAD 容器与 FreeCAD 交叉回读，并生成 SBOM。
 
 ## 常见问题
 
