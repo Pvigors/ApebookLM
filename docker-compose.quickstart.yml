@@ -1,0 +1,119 @@
+# 预构建镜像版：与 docker-compose.yml 独立使用，不要通过 -f 合并两个编排。
+# 必须显式选择维护者已发布的版本或 SHA；不把 main/latest 视为稳定版。
+services:
+  config-check:
+    image: ${APEBOOKLM_IMAGE:-ghcr.io/pvigors/apebooklm}-config-validator:${APEBOOKLM_IMAGE_TAG:?请先选择已发布的明确镜像标签}
+    platform: linux/amd64
+    restart: "no"
+    environment:
+      SELF_HOSTING_DATABASE_MODE: ${SELF_HOSTING_DATABASE_MODE:-compose}
+      DATABASE_URL: ${DATABASE_URL:?必须在 env 文件设置 DATABASE_URL}
+      POSTGRES_USER: ${POSTGRES_USER:-apebooklm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-apebooklm}
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  db:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    restart: always
+    depends_on:
+      config-check:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-apebooklm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?compose 自带 db 必须在 env 文件设 POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-apebooklm}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-apebooklm} -d ${POSTGRES_DB:-apebooklm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    image: ${APEBOOKLM_IMAGE:-ghcr.io/pvigors/apebooklm}-web:${APEBOOKLM_IMAGE_TAG:?请先选择已发布的明确镜像标签}
+    platform: linux/amd64
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${HOST_PORT:-3000}:3000"
+    env_file:
+      - ${ENV_FILE:-.env}
+    environment:
+      PORT: "3000"
+      NBLM_WORKER_ENABLED: ${NBLM_WORKER_ENABLED:-1}
+      NBLM_NON_CAD_WORKER_ENABLED: "1"
+      NBLM_CAD_WORKER_ENABLED: "0"
+      NBLM_CAD_ENABLED: ${NBLM_CAD_ENABLED:-1}
+      NBLM_WORKER_ID: ${NBLM_WORKER_ID:-standalone}
+    volumes:
+      - media-data:/app/.data
+      - cad-data:/app/.data/cad
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  cad-worker:
+    image: ${APEBOOKLM_IMAGE:-ghcr.io/pvigors/apebooklm}-cad:${APEBOOKLM_IMAGE_TAG:?请先选择已发布的明确镜像标签}
+    platform: linux/amd64
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    env_file:
+      - ${ENV_FILE:-.env}
+    environment:
+      PORT: "3000"
+      NBLM_WORKER_ENABLED: ${NBLM_WORKER_ENABLED:-1}
+      NBLM_NON_CAD_WORKER_ENABLED: "0"
+      NBLM_CAD_WORKER_ENABLED: ${NBLM_CAD_WORKER_ENABLED:-1}
+      NBLM_CAD_ENABLED: ${NBLM_CAD_ENABLED:-1}
+      NBLM_INTERNAL_CAD_WORKER_HOST: "1"
+      NBLM_WORKER_ID: ${NBLM_WORKER_ID:-standalone}
+      CAD_REQUIRE_EXTERNAL_STEP_VALIDATOR: "1"
+      CAD_EXTERNAL_STEP_VALIDATOR_BIN: /usr/bin/python3
+      PYTHONPATH: /usr/lib/freecad-python3/lib
+      HOME: /tmp
+    user: "${NBLM_CAD_RUNTIME_UID:-1000}:${NBLM_CAD_RUNTIME_GID:-1000}"
+    read_only: true
+    volumes:
+      - cad-data:/app/.data/cad
+    mem_limit: 3g
+    cpus: 2.0
+    pids_limit: 256
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=512m
+      - /app/.data/cad-tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/internal/cad-worker-wake').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 40s
+      retries: 3
+      start_period: 50s
+
+volumes:
+  postgres-data:
+  media-data:
+  cad-data:

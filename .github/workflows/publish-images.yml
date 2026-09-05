@@ -1,0 +1,223 @@
+name: Publish container images
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "已通过 main CI 的版本标签或完整 40 位提交 SHA（不接受分支名）"
+        required: true
+        type: string
+
+# 发布权仅在 publish job 中开放；不需要 PAT、云凭据或仓库写权限。
+permissions:
+  contents: read
+
+concurrency:
+  # 标签 push 与手动标签发布会归入同一组，避免检查标签后被另一次运行抢先发布。
+  group: publish-container-images
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      tag: ${{ steps.source.outputs.tag }}
+      version: ${{ steps.source.outputs.version }}
+      image: ${{ steps.source.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+      - name: Resolve exact source and require successful main CI
+        id: source
+        shell: bash
+        env:
+          SOURCE_REF: ${{ inputs.ref || github.ref }}
+          REPOSITORY: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          requested="${SOURCE_REF#refs/tags/}"
+          package_version="$(node -p 'require("./package.json").version')"
+          if [[ "$requested" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+([.-][a-z0-9]+)*)?$ ]]; then
+            test "$package_version" = "${requested#v}" || { echo '版本标签必须与 package.json 一致'; exit 1; }
+            tag="$requested"
+            version="$package_version"
+          elif [[ "$requested" =~ ^[a-f0-9]{40}$ ]] && [[ "$requested" = "$sha" ]]; then
+            tag="sha-$sha"
+            version="$package_version+sha.$sha"
+          else
+            echo '只接受明确版本标签或完整 40 位 SHA；不发布 main/latest 别名'
+            exit 1
+          fi
+          # CI 的两个 job（build / cad-container）都成功，workflow run 才是 success。
+          # 仅认可同一仓库默认分支的 push 运行，不能以 PR 或其它 SHA 的成功替代。
+          passed="$(gh api --method GET "repos/$REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f head_sha="$sha" -f status=success -f branch="$DEFAULT_BRANCH" -f event=push -f per_page=100 \
+            --jq '.workflow_runs | length')"
+          test "$passed" -gt 0 || { echo '此提交尚无成功的默认分支 CI；等待 CI 完成后重新运行'; exit 1; }
+          printf 'sha=%s\ntag=%s\nversion=%s\nimage=ghcr.io/%s\n' \
+            "$sha" "$tag" "$version" "${REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ${{ needs.prepare.outputs.image }}
+      IMAGE_TAG: ${{ needs.prepare.outputs.tag }}
+      SOURCE_SHA: ${{ needs.prepare.outputs.sha }}
+      SOURCE_VERSION: ${{ needs.prepare.outputs.version }}
+      SOURCE_URL: https://github.com/${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the three images locally before publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pair in web:runner cad:cad-runner config-validator:config-validator; do
+            component="${pair%%:*}"
+            target="${pair#*:}"
+            docker buildx build --load --platform linux/amd64 --target "$target" \
+              --build-arg APT_MIRROR=deb.debian.org \
+              --build-arg NPM_REGISTRY=https://registry.npmjs.org \
+              --build-arg NODE_DISTURL=https://nodejs.org/download/release/ \
+              --label "org.opencontainers.image.source=$SOURCE_URL" \
+              --label "org.opencontainers.image.revision=$SOURCE_SHA" \
+              --label "org.opencontainers.image.version=$SOURCE_VERSION" \
+              --label 'org.opencontainers.image.licenses=AGPL-3.0-only' \
+              -t "$IMAGE-$component:$IMAGE_TAG" .
+          done
+      - name: Native FreeCAD and independent cross-tool STEP gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=512m \
+            --tmpfs /app/.data/cad-tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777 \
+            --memory 3g --cpus 2 --pids-limit 256 \
+            --entrypoint /usr/bin/python3 "$IMAGE-cad:$IMAGE_TAG" /app/scripts/freecad-health.py
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=512m \
+            --tmpfs /app/.data/cad-tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777 \
+            --memory 3g --cpus 2 --pids-limit 256 \
+            --entrypoint node "$IMAGE-cad:$IMAGE_TAG" /app/scripts/cad-cross-validator-health.mjs
+      - name: Verify quickstart on an empty database with the images to be published
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 使用本次运行的新随机测试凭据；不接收供应商 Key，不输出 Compose 展开后的环境。
+          node --input-type=module <<'NODE'
+          import { createConfiguration, writeConfiguration } from './scripts/init-self-hosting.mjs';
+          import crypto from 'node:crypto';
+          const values = createConfiguration({ imageTag: process.env.IMAGE_TAG, imageRegistry: process.env.IMAGE,
+            origin: 'http://localhost:3000', username: 'container-ci', password: crypto.randomBytes(24).toString('hex'),
+            apiKey: 'fixture-not-a-provider-key', baseUrl: 'https://api.openai.com/v1', model: 'fixture-model',
+            envFile: '.env' });
+          writeConfiguration('.env', values);
+          NODE
+          docker pull postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+          docker compose -p apebooklm-publish -f docker-compose.quickstart.yml --env-file .env up -d --no-build --pull never --wait --wait-timeout 240
+          test "$(docker compose -p apebooklm-publish -f docker-compose.quickstart.yml --env-file .env ps -q web | wc -l)" -eq 1
+          docker compose -p apebooklm-publish -f docker-compose.quickstart.yml --env-file .env exec -T cad-worker node -e '
+            if (process.getuid() === 0) process.exit(1);
+            fetch("http://127.0.0.1:3000/api/internal/cad-worker-wake", { signal: AbortSignal.timeout(10000) })
+              .then(async r => { const b = await r.json(); process.exit(r.ok && b.ok === true && b.validator === "freecad-native" ? 0 : 1); })
+              .catch(() => process.exit(1));'
+      - name: Generate SPDX and image evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/container-release-evidence"
+          for pair in web:web cad:cad-worker; do
+            component="${pair%%:*}"
+            node scripts/generate-container-sbom.mjs "$IMAGE-$component:$IMAGE_TAG" --component "${pair#*:}" \
+              > "$RUNNER_TEMP/container-release-evidence/$component.spdx.json"
+          done
+          for component in web cad config-validator; do
+            docker image inspect --format '{{.Id}}' "$IMAGE-$component:$IMAGE_TAG" \
+              > "$RUNNER_TEMP/container-release-evidence/$component.image-id.txt"
+          done
+      # ghcr 的写令牌仅在所有构建、就绪和 CAD 门禁通过后用于登录。
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Refuse to overwrite any existing destination tag
+        shell: bash
+        env:
+          GH_ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # 所有目标先检查，再执行任何 push；网络、鉴权或未知状态均拒绝继续。
+          for component in web cad config-validator; do
+            repository="${IMAGE#ghcr.io/}-$component"
+            token="$(curl --fail --silent --show-error --connect-timeout 15 --max-time 60 \
+              --user "$GH_ACTOR:$GH_TOKEN" --get https://ghcr.io/token \
+              --data-urlencode service=ghcr.io --data-urlencode "scope=repository:$repository:pull,push" \
+              | node -e 'let s="";process.stdin.on("data",x=>s+=x);process.stdin.on("end",()=>{const t=JSON.parse(s).token;if(typeof t!=="string"||!t)process.exit(1);process.stdout.write(t);});')"
+            status="$(curl --silent --show-error --head --output /dev/null --write-out '%{http_code}' \
+              --connect-timeout 15 --max-time 60 \
+              --header "Authorization: Bearer $token" \
+              --header 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' \
+              "https://ghcr.io/v2/$repository/manifests/$IMAGE_TAG")"
+            unset token
+            case "$status" in
+              404) ;;
+              200) echo "镜像标签已存在，拒绝覆盖：$repository:$IMAGE_TAG"; exit 1 ;;
+              *) echo "无法确认镜像标签未使用（HTTP $status），拒绝发布"; exit 1 ;;
+            esac
+          done
+      - name: Push the exact tested images and record registry digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for component in web cad config-validator; do
+            ref="$IMAGE-$component:$IMAGE_TAG"
+            docker push "$ref"
+            docker image inspect --format '{{join .RepoDigests "\n"}}' "$ref" \
+              > "$RUNNER_TEMP/container-release-evidence/$component.registry-digest.txt"
+          done
+          printf 'source=%s/tree/%s\ntag=%s\nplatform=linux/amd64\n' "$SOURCE_URL" "$SOURCE_SHA" "$IMAGE_TAG" \
+            > "$RUNNER_TEMP/container-release-evidence/source.txt"
+          cd "$RUNNER_TEMP/container-release-evidence"
+          sha256sum ./*.json ./*.txt > SHA256SUMS
+          {
+            printf '### 已发布经测试的容器镜像\n\n源码：%s/tree/%s\n\n' "$SOURCE_URL" "$SOURCE_SHA"
+            printf '镜像标签：`%s`；平台：`linux/amd64`。\n\n' "$IMAGE_TAG"
+            printf '首次发布后须将三个 GHCR 包设为 Public，并在未登录环境验证匿名拉取。\n\n'
+            printf '```text\n'
+            for component in web cad config-validator; do cat "$component.registry-digest.txt"; done
+            printf '```\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: container-release-evidence-${{ needs.prepare.outputs.tag }}
+          path: ${{ runner.temp }}/container-release-evidence
+          if-no-files-found: error
+          retention-days: 90
+      - name: Cleanup temporary test containers and volumes
+        if: always()
+        shell: bash
+        run: |
+          if test -f .env; then
+            docker compose -p apebooklm-publish -f docker-compose.quickstart.yml --env-file .env down --volumes --remove-orphans
+          fi
